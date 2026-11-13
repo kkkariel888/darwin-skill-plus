@@ -1,11 +1,11 @@
 ---
 name: darwin-skill-plus
-description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动更新把关」——优化完检查 skill 所在仓库能不能让用户装一次自动更新，改了内容提醒涨版本号。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\"."
+description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\"."
 ---
 
 # Darwin Skill Plus（达尔文增强版）
 
-> **Plus · 2026-11-13** — fork 自花叔 [darwin-skill](https://github.com/alchaincyf/darwin-skill)（MIT）。新增「自动更新把关」gate（见下方同名章节）、results.tsv 挪到 `~/.darwin-skill-plus/`（插件更新不丢历史）、开工自查新版本。其余规则与原版一致。
+> **Plus · 2026-11-13** — fork 自花叔 [darwin-skill](https://github.com/alchaincyf/darwin-skill)（MIT）。新增「自动发布准备」（优化完自动体检 + 补齐 + 涨版本号，见下方同名章节）、results.tsv 挪到 `~/.darwin-skill-plus/`（插件更新不丢历史）、开工自查新版本。其余规则与原版一致。
 > `<本skill>` 指这份 SKILL.md 所在的文件夹。
 
 > **v2.1 · 2026-06-10** — keep/revert 棘轮从「绝对分数 delta」改为「**paired 同-judge 比较 + 奇数 N 多数决**」（绝对分数 ±8 judge 噪音淹没保守编辑的真实增益、是 false-revert 源；within-judge 比较消除换尺污染）。绝对分数降级为 triage-only。
@@ -111,26 +111,34 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 
 ---
 
-## 自动更新把关（gate 项，Plus 新增，独立于 9 维度评分）
+## 自动发布准备：体检 + 自动补齐（Plus 新增，独立于 9 维度评分）
 
-skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git 仓库里时，**Phase 1 和 Phase 3 各跑一次**：
+skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git 仓库里时，达尔文增强版**优化完自己把发布准备做完，不只是提醒**。只有推送到 GitHub 前停一次（公开操作，推出去收不回）。
 
-```bash
-python3 <本skill>/scripts/autoupdate_check.py <skill 所在仓库的根目录> --base <优化开始前的 commit>
-```
+**Phase 1（体检，只看不改）**：`python3 <本skill>/scripts/autoupdate_check.py <仓库根目录> --base <优化前 commit>`，结果写进基线评分卡的备注。
 
-最后一行 `STATUS=PASS / WARN / FAIL`，每项 ✅/❌/⚠️。重点看：
-- **P1 插件市场结构**：没有 `.claude-plugin/marketplace.json` → 用户只能手动复制，永远不会自动更新。Phase 3 报告里写明，结构模板见 [references/auto-update-layout.md](references/auto-update-layout.md)；**不在优化循环里改结构**（那会挪文件，超出「只改 SKILL.md」）。
-- **P3 改了内容没涨版本号**：Phase 3 一定会命中（优化就是改了内容）。**🔴 CHECKPOINT**：问用户「要涨版本号吗」，按钮 **涨一位（推荐）** / **先不涨**。同意后跑仓库里的 `python3 tools/bump.py`；没有这个文件就照 auto-update-layout.md 把 marketplace.json 和各 plugin.json 的 version 一起改，然后 `git commit -m "bump version"`。
-- 其余 ⚠️（README 没教开自动更新、没有 GitHub 自动检查等）只写进报告，建议用户用 ariel-release-check skill 一次补齐，不在本流程里改。
+**Phase 3.5（自动补齐，所有 skill 优化完、汇总报告前，不用再问用户）**：
+1. 在优化分支上跑 `python3 <本skill>/scripts/autoupdate_fix.py <仓库根目录> --base <优化前 commit>`。它自动：补 `tools/bump.py`（写死插件名的换成通用版）、`tools/check_version_bump.py` + `.github/workflows/version-check.yml`、`.gitignore`、skill 的 `scripts/update_check.py`，并且**版本号改齐、改了内容就最后一位 +1**。
+2. 最后一行是 `FIX=NEED_LAYOUT`（不是插件市场结构）→ 照 [references/auto-update-layout.md](references/auto-update-layout.md) 搭好结构：`git mv` 把 SKILL.md 和它的文件夹挪到 `plugins/<名>/skills/<名>/`，写齐 4 个 json（版本号 1.0.0），再跑一次第 1 条。
+3. 脚本说加了 `update_check.py` → 在那个 SKILL.md 开工第一步加一行：「`python3 <本skill>/scripts/update_check.py`：只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句」。
+4. README 照 [references/readme-install.md](references/readme-install.md) 补缺的安装说明（插件市场装法、命令行装法下面「打开自动更新」那一句、手动复制不会自动更新的提醒），只加不删。
+5. 再跑体检，**不能有 ❌**；有就按提示修，最多 3 次，还不行写进报告。
+6. `git add -A && git commit -m "release: 自动更新补齐 + 版本号 <旧> → <新>"`。
 
-不在 git 仓库里的 skill：跳过本 gate，报告里写一句「不在 git 仓库，无法判断能否自动更新」。
+**Phase 3 的 🔴 CHECKPOINT** 一起给用户看：优化改了什么 + 发布准备补了什么 + 版本号从几到几 + 体检结果。按钮：**推送并开合并申请（推荐）** / **先不推**。用户同意后 `git push -u origin <分支>` → `gh pr create`；仓库还没上 GitHub 就问仓库名和公开/私有，`gh repo create <用户名>/<名> --source . --remote origin --push`。合并后读 `https://raw.githubusercontent.com/<用户名>/<仓库>/HEAD/plugins/<名>/.claude-plugin/plugin.json`，版本号对上才告诉用户「已发出去」。
+
+| 情况 | 怎么办 |
+|---|---|
+| skill 不在 git 仓库（比如直接放在 skills 文件夹） | 跳过本节，报告写「不在 git 仓库，用户收不到更新；要开源就先建仓库」。 |
+| 仓库是别人的（push 被拒） | 不推送，告诉用户要先 fork。 |
+| 体检发现密钥 / 个人路径 | 个人路径直接改成 `~` 或相对路径；密钥**不替用户处理**，停下告诉用户去作废。 |
+| 脚本输出 `FIX=ERROR` | 把输出原文告诉用户，跳过本节其余步骤。 |
 
 ## 自主优化循环
 
 ### Phase 0: 初始化
 
-0. `python3 <本skill>/scripts/update_check.py`：查达尔文增强版自己有没有新版本，只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句。记下每个被优化 skill 所在仓库优化前的 commit（自动更新把关的 `--base` 用）。
+0. `python3 <本skill>/scripts/update_check.py`：查达尔文增强版自己有没有新版本，只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句。记下每个被优化 skill 所在仓库优化前的 commit（自动发布准备的 `--base` 用）。
 
 ```
 1. 确认优化范围：
@@ -302,9 +310,9 @@ for each skill:
 1. [skill-A] 补充了边界条件处理，测试输出质量提升明显
 2. [skill-B] 重组了workflow结构，baseline对比优势增大
 
-### 自动更新把关（Plus）
-- [skill-A] 仓库 xxx：✅ 插件市场结构 ✅ 版本号 1.1.2 → 1.1.3（已涨）⚠️ README 没教开自动更新
-- [skill-B] 不在插件市场结构：用户只能手动复制，收不到这次优化
+### 自动发布准备（Plus）
+- [skill-A] 仓库 xxx：已补 GitHub 自动检查、通用 bump.py、README 自动更新说明；版本号 1.1.2 → 1.1.3；体检 ✅ 全部通过
+- [skill-B] 不在 git 仓库：用户收不到更新，要开源先建仓库
 ```
 
 ---
@@ -408,7 +416,7 @@ paired 行：`new_score` 栏记 vote 比数（如 `3-0 better`），`note` 记�
 | 7 | **静默跳过异常** | 遇到 git/tsv 异常时静默继续，破坏 ratchet 完整性 | 异常表 10 条 fallback 必须先告知用户再处理 |
 | 8 | **忽视维度相关性单独优化** | dim2/3/4 是相关簇，单独优化 dim2 时常发现已被前轮 dim3 修复推到顶 | 找最大加权短板维度时同时看相关簇短板，决定是否同步改 |
 
-| 9 | **优化完不涨版本号**（Plus 新增） | 内容改了、版本号没变，插件市场认为没有新版，用户永远收不到这次优化 | Phase 3 跑自动更新把关，P3 命中就 🔴 问用户后 `tools/bump.py` |
+| 9 | **优化完不涨版本号 / 只提醒不补齐**（Plus 新增） | 内容改了、版本号没变，插件市场认为没有新版，用户永远收不到这次优化 | Phase 3.5 自动跑 `autoupdate_fix.py`，补齐并涨版本号后再进 CHECKPOINT |
 
 **触发场景**：每轮 Phase 2 改动前对照本表一次。任一反模式命中 → 改方案重写。
 
