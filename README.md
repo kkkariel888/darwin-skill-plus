@@ -6,7 +6,7 @@
 
 - 检查 skill 所在仓库是不是插件市场结构（不是的话，用户只能手动复制，永远收不到更新）
 - 优化改了内容 → 提醒你涨版本号，你点头就一键改齐（不涨版本号，用户那边就当没有新版本）
-- 其他缺的（README 没教开自动更新、没有 GitHub 自动检查）写进报告，可以用 [release-check](https://github.com/kkkariel888/ariel-release-check) 一次补齐
+- 其他缺的（README 没教开自动更新、没有 GitHub 自动检查）写进报告，可以用 [ariel-release-check](https://github.com/kkkariel888/ariel-release-check) 一次补齐
 - 优化记录放在 `~/.darwin-skill-plus/`，插件自己更新时不会丢
 
 装好后对 AI 说：「用达尔文优化一下 XX skill」或「用达尔文给我所有 skill 打个分」。

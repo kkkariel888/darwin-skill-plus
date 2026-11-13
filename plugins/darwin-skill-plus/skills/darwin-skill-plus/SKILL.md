@@ -122,7 +122,7 @@ python3 <本skill>/scripts/autoupdate_check.py <skill 所在仓库的根目录> 
 最后一行 `STATUS=PASS / WARN / FAIL`，每项 ✅/❌/⚠️。重点看：
 - **P1 插件市场结构**：没有 `.claude-plugin/marketplace.json` → 用户只能手动复制，永远不会自动更新。Phase 3 报告里写明，结构模板见 [references/auto-update-layout.md](references/auto-update-layout.md)；**不在优化循环里改结构**（那会挪文件，超出「只改 SKILL.md」）。
 - **P3 改了内容没涨版本号**：Phase 3 一定会命中（优化就是改了内容）。**🔴 CHECKPOINT**：问用户「要涨版本号吗」，按钮 **涨一位（推荐）** / **先不涨**。同意后跑仓库里的 `python3 tools/bump.py`；没有这个文件就照 auto-update-layout.md 把 marketplace.json 和各 plugin.json 的 version 一起改，然后 `git commit -m "bump version"`。
-- 其余 ⚠️（README 没教开自动更新、没有 GitHub 自动检查等）只写进报告，建议用户用 release-check skill 一次补齐，不在本流程里改。
+- 其余 ⚠️（README 没教开自动更新、没有 GitHub 自动检查等）只写进报告，建议用户用 ariel-release-check skill 一次补齐，不在本流程里改。
 
 不在 git 仓库里的 skill：跳过本 gate，报告里写一句「不在 git 仓库，无法判断能否自动更新」。
 
