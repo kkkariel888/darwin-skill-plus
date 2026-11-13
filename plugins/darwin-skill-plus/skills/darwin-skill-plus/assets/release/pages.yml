@@ -1,0 +1,29 @@
+# 放到 .github/workflows/pages.yml
+# 作用：推送到 main 后自动把网页发布到 https://<用户名>.github.io/<仓库名>/
+# 第一次还要在 GitHub 仓库 Settings → Pages → Source 选「GitHub Actions」
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

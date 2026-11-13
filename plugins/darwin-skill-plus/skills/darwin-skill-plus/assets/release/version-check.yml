@@ -1,0 +1,15 @@
+# 放到 .github/workflows/version-check.yml
+# 作用：提合并申请时自动检查——插件内容改了、版本号没涨，就亮红灯，提醒先跑 tools/bump.py
+name: version-check
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python3 tools/check_version_bump.py origin/${{ github.base_ref }}
