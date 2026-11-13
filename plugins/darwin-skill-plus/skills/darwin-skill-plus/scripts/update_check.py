@@ -31,7 +31,7 @@ def run(cmd):
 
 def main():
     me = local(); plugin = me.get("name", ""); mine = me.get("version", "0")
-    raw = f"https://raw.githubusercontent.com/{REPO}/main/plugins/{plugin}/.claude-plugin/plugin.json"
+    raw = f"https://raw.githubusercontent.com/{REPO}/HEAD/plugins/{plugin}/.claude-plugin/plugin.json"
     try:
         with urllib.request.urlopen(raw, timeout=6) as r:
             latest = json.loads(r.read().decode("utf-8")).get("version")
