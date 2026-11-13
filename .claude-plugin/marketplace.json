@@ -1,0 +1,17 @@
+{
+  "name": "darwin-skill-plus",
+  "owner": {
+    "name": "kkkariel888"
+  },
+  "metadata": {
+    "description": "达尔文增强版：装一次，作者更新自动到你手里（Claude / Codex 通用）"
+  },
+  "plugins": [
+    {
+      "name": "darwin-skill-plus",
+      "source": "./plugins/darwin-skill-plus",
+      "description": "达尔文增强版：给 skill 打分、自动优化（基于花叔 darwin-skill，MIT），并检查 skill 所在仓库能不能让用户装一次自动更新，改了内容提醒涨版本号。Claude 和 Codex 通用。",
+      "version": "1.0.0"
+    }
+  ]
+}

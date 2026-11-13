@@ -1,16 +1,19 @@
 ---
-name: darwin-skill
-description: "Darwin Skill 2.0 (达尔文.skill 2.0): autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\"."
+name: darwin-skill-plus
+description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动更新把关」——优化完检查 skill 所在仓库能不能让用户装一次自动更新，改了内容提醒涨版本号。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\"."
 ---
 
-# Darwin Skill 2.0
+# Darwin Skill Plus（达尔文增强版）
+
+> **Plus · 2026-11-13** — fork 自花叔 [darwin-skill](https://github.com/alchaincyf/darwin-skill)（MIT）。新增「自动更新把关」gate（见下方同名章节）、results.tsv 挪到 `~/.darwin-skill-plus/`（插件更新不丢历史）、开工自查新版本。其余规则与原版一致。
+> `<本skill>` 指这份 SKILL.md 所在的文件夹。
 
 > **v2.1 · 2026-06-10** — keep/revert 棘轮从「绝对分数 delta」改为「**paired 同-judge 比较 + 奇数 N 多数决**」（绝对分数 ±8 judge 噪音淹没保守编辑的真实增益、是 false-revert 源；within-judge 比较消除换尺污染）。绝对分数降级为 triage-only。
 > **v2.0 · 2026-05-28** — 吸收 Microsoft Research SkillLens（arXiv 2605.23899）的 9 维评分药方 + SkillOpt（arXiv 2605.23904）的 validation-gated 验证机制 + human in the loop 三层守关。
 >
 > 借鉴 Karpathy autoresearch 的自主实验循环，对 skills 进行持续优化。
 > 核心理念：**评估 → 改进 → 实测验证 → 人类确认 → 保留或回滚 → 生成成果卡片**
-> GitHub: https://github.com/alchaincyf/darwin-skill
+> 原版 GitHub: https://github.com/alchaincyf/darwin-skill ｜ 增强版: https://github.com/kkkariel888/darwin-skill-plus
 
 ---
 
@@ -108,9 +111,26 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 
 ---
 
+## 自动更新把关（gate 项，Plus 新增，独立于 9 维度评分）
+
+skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git 仓库里时，**Phase 1 和 Phase 3 各跑一次**：
+
+```bash
+python3 <本skill>/scripts/autoupdate_check.py <skill 所在仓库的根目录> --base <优化开始前的 commit>
+```
+
+最后一行 `STATUS=PASS / WARN / FAIL`，每项 ✅/❌/⚠️。重点看：
+- **P1 插件市场结构**：没有 `.claude-plugin/marketplace.json` → 用户只能手动复制，永远不会自动更新。Phase 3 报告里写明，结构模板见 [references/auto-update-layout.md](references/auto-update-layout.md)；**不在优化循环里改结构**（那会挪文件，超出「只改 SKILL.md」）。
+- **P3 改了内容没涨版本号**：Phase 3 一定会命中（优化就是改了内容）。**🔴 CHECKPOINT**：问用户「要涨版本号吗」，按钮 **涨一位（推荐）** / **先不涨**。同意后跑仓库里的 `python3 tools/bump.py`；没有这个文件就照 auto-update-layout.md 把 marketplace.json 和各 plugin.json 的 version 一起改，然后 `git commit -m "bump version"`。
+- 其余 ⚠️（README 没教开自动更新、没有 GitHub 自动检查等）只写进报告，建议用户用 release-check skill 一次补齐，不在本流程里改。
+
+不在 git 仓库里的 skill：跳过本 gate，报告里写一句「不在 git 仓库，无法判断能否自动更新」。
+
 ## 自主优化循环
 
 ### Phase 0: 初始化
+
+0. `python3 <本skill>/scripts/update_check.py`：查达尔文增强版自己有没有新版本，只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句。记下每个被优化 skill 所在仓库优化前的 commit（自动更新把关的 `--base` 用）。
 
 ```
 1. 确认优化范围：
@@ -281,6 +301,10 @@ for each skill:
 ### 主要改进
 1. [skill-A] 补充了边界条件处理，测试输出质量提升明显
 2. [skill-B] 重组了workflow结构，baseline对比优势增大
+
+### 自动更新把关（Plus）
+- [skill-A] 仓库 xxx：✅ 插件市场结构 ✅ 版本号 1.1.2 → 1.1.3（已涨）⚠️ README 没教开自动更新
+- [skill-B] 不在插件市场结构：用户只能手动复制，收不到这次优化
 ```
 
 ---
@@ -299,7 +323,7 @@ paired 行：`new_score` 栏记 vote 比数（如 `3-0 better`），`note` 记�
 ```tsv
 2026-06-10T06:30	paired	some-skill	（绝对 87.3→78.8 = judge 噪音）	3-0 better	paired 推翻单评假退步	paired
 ```
-文件位置：`.claude/skills/darwin-skill/results.tsv`
+文件位置：`~/.darwin-skill-plus/results.tsv`（放在插件目录外，插件自动更新时不会被覆盖；目录不存在就先建）
 
 ---
 
@@ -383,6 +407,8 @@ paired 行：`new_score` 栏记 vote 比数（如 `3-0 better`），`note` 记�
 | 6 | **dry_run 比例 > 30%** | dim8 实测维度形同虚设，分数虚高（早期 40 次记录 67% dry_run，0 revert） | 强制至少 1 个真实 full_test；dry_run 多的优化在 results.tsv 显式打 ⚠️ |
 | 7 | **静默跳过异常** | 遇到 git/tsv 异常时静默继续，破坏 ratchet 完整性 | 异常表 10 条 fallback 必须先告知用户再处理 |
 | 8 | **忽视维度相关性单独优化** | dim2/3/4 是相关簇，单独优化 dim2 时常发现已被前轮 dim3 修复推到顶 | 找最大加权短板维度时同时看相关簇短板，决定是否同步改 |
+
+| 9 | **优化完不涨版本号**（Plus 新增） | 内容改了、版本号没变，插件市场认为没有新版，用户永远收不到这次优化 | Phase 3 跑自动更新把关，P3 命中就 🔴 问用户后 `tools/bump.py` |
 
 **触发场景**：每轮 Phase 2 改动前对照本表一次。任一反模式命中 → 改方案重写。
 
@@ -480,7 +506,7 @@ paired 行：`new_score` 栏记 vote 比数（如 `3-0 better`），`note` 记�
    - data-field="date" → 当前日期
 3. 随机选择风格：hash 设为 swiss/terminal/newspaper 之一
 4. 用 scripts/screenshot.mjs 截图（2x 高清，只截 .card 元素，自动 open 图片）：
-   node .claude/skills/darwin-skill/scripts/screenshot.mjs \
+   node <本skill>/scripts/screenshot.mjs \
      /abs/path/to/card.html /abs/path/to/output.png
    # 回退方案（脚本失败时）：
    npx playwright screenshot "file:///path/to/card.html#[theme]" \

@@ -1,0 +1,9 @@
+{
+  "name": "darwin-skill-plus",
+  "version": "1.0.0",
+  "description": "达尔文增强版：给 skill 打分、自动优化（基于花叔 darwin-skill，MIT），并检查 skill 所在仓库能不能让用户装一次自动更新，改了内容提醒涨版本号。Claude 和 Codex 通用。",
+  "author": {
+    "name": "kkkariel888"
+  },
+  "license": "MIT"
+}
