@@ -214,7 +214,7 @@ def check_channel(root, t):
         ok = re.search(r"deploy-pages|peaceiris/actions-gh-pages|vercel|netlify", wf) or \
             any(os.path.exists(os.path.join(root, x)) for x in ("vercel.json", "netlify.toml"))
         add("PASS" if ok else "WARN", "C1", "网页：" + ("推送后会自动上线" if ok else "没看到自动上线配置（GitHub Pages / Vercel 等）"),
-            "" if ok else "见 references/channels.md 的网页一节")
+            "" if ok else "复制 assets/pages.yml 到 .github/workflows/，见 references/channels.md 的网页一节")
     elif t == "browser-ext":
         add("INFO", "C1", "浏览器插件：上架 Chrome 应用商店后由商店自动更新；GitHub 下载安装的不会更新", "见 references/channels.md")
     elif t == "mac-app":
@@ -269,7 +269,7 @@ def check_basics(root, files):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("root")
-    ap.add_argument("--base", default=None, help="和哪个分支比（默认 origin/main，存在才比）")
+    ap.add_argument("--base", default=None, help="和哪个分支比（默认远程主分支 origin/HEAD，其次 origin/main、origin/master）")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
     root = os.path.abspath(os.path.expanduser(a.root))
@@ -277,11 +277,15 @@ def main():
         print(f"找不到目录：{root}\nSTATUS=FAIL")
         sys.exit(1)
     base = a.base
-    if base is None and git(root, "rev-parse", "--verify", "-q", "origin/main"):
-        base = "origin/main"
+    if base is None:
+        head = (git(root, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD") or "").strip()
+        for cand in [head, "origin/main", "origin/master"]:
+            if cand and git(root, "rev-parse", "--verify", "-q", cand):
+                base = cand
+                break
     files = tracked(root)
     if not base:
-        add("INFO", "P3", "没有 origin/main 可比较，跳过「改了内容有没有涨版本号」", "git fetch 后再跑，或用 --base 指定")
+        add("INFO", "P3", "没有远程主分支可比较，跳过「改了内容有没有涨版本号」", "git fetch 后再跑，或用 --base 指定")
     types = detect(root, files)
     add("INFO", "T0", "这个仓库是：" + "、".join(types))
     for t in types:
