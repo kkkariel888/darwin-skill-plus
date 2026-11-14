@@ -1,6 +1,6 @@
 ---
 name: ariel-darwin-plus
-description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次；和「平台适配体检」——查 skill 在开发者要的 AI 里能不能完整用（默认 Claude 桌面 app 的 Code 页面 + Codex，点名的其他 AI 照官方规范补上），装不上、跑不起来的当 P0 改好。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\", \"平台适配\", \"能不能在 Cowork 用\", \"Codex 能不能用\", \"全平台\"."
+description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次；和「平台适配体检」——查 skill 在开发者要的 AI 里能不能完整用（默认 Claude 桌面 app 的 Code 页面 + Codex，点名的其他 AI 照官方规范补上），装不上、跑不起来的当 P0 改好；和「真实体验关」——复杂项目先写体验剧本，再真跑一遍按体验标准（多久有反馈、点了有没有反应、用户要点几下、文件夹干不干净）打分，不达标当 P0 修。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\", \"平台适配\", \"能不能在 Cowork 用\", \"Codex 能不能用\", \"全平台\", \"体验测试\", \"真跑一遍\", \"用户体验\", \"好不好用\", \"太慢\"."
 ---
 
 # Darwin Skill Plus（达尔文增强版）
@@ -135,6 +135,17 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 
 ---
 
+## 真实体验关（Plus 新增，复杂项目必过，gate 项）
+
+9 维度评分只看说明书写得对不对，测不出「慢、点了没反应、图看不全、文件夹一堆垃圾」。**会开网页、要确认两次以上、用一次超过 3 分钟、会往用户文件夹写文件——满足一条就必须过这一关**，否则不进发布。完整做法见 [references/experience-gate.md](references/experience-gate.md)，要点：
+
+1. **Phase 0.6 写体验剧本**：被测仓库 `tests/ux/journey.json`（用户是谁、输入什么、每一步看到什么点什么等多久、最后拿到什么）+ 体验标准（默认：10 秒内有反馈、干等不超过 30 秒、页面点了 5 秒内有反应、用户最多发 3 条消息、结果一次看完、文件夹只留用户要的）+ 一份很小的测试材料 `tests/ux/fixture/`。**🔴 CHECKPOINT**：用大白话给开发者看剧本，点头再往下。新项目开发前就写，第一版就照着做。
+2. **Phase 1 真跑摸底一次**：派执行者把 skill 真做一遍，用 `scripts/ux_log.py` 记流水；要打开的页面由 `scripts/ux_page.py` 像真人一样点（不花 token）；`scripts/ux_report.py` 出体验成绩单；再派最便宜的模型当「小白评审」只看截图挑毛病。
+3. 成绩单有 ❌ → Phase 2 第一轮 **P0「体验修复」**（改 skill，不改剧本放水）。
+4. **Phase 3.5 真跑验收一次**：不能有 ❌，也不能比上次慢、多点、多问；变差就撤回。
+5. **省钱**：能用脚本的不用 AI，测试材料要小，假用户的回答和点击写死，只真跑两次，只重跑改过的那段，超时就停。
+6. 报告里放成绩单（每一步多少秒、用户点几下、发几条消息），写清在哪个 AI 里真跑的。
+
 ## 自动发布准备：体检 + 自动补齐（Plus 新增，独立于 9 维度评分）
 
 skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git 仓库里时，达尔文增强版**优化完自己把发布准备做完，不只是提醒**。只有推送到 GitHub 前停一次（公开操作，推出去收不回）。
@@ -191,6 +202,10 @@ for each skill:
 ```
 
 展示所有测试prompt给用户，**确认后再进入评估**。测试prompt的质量决定了优化方向是否正确。
+
+### Phase 0.6: 体验剧本（复杂项目必做，Plus 新增）
+
+复杂项目（会开网页 / 要确认两次以上 / 用一次超过 3 分钟 / 会往用户文件夹写文件）照 [references/experience-gate.md](references/experience-gate.md) 写 `tests/ux/journey.json`、`tests/ux/page.json` 和很小的测试材料 `tests/ux/fixture/`，和测试 prompt 一起给用户看。**🔴 CHECKPOINT**：剧本用大白话讲（每一步用户看到什么、点什么、最多等多久），用户点头再进 Phase 1。Phase 1 基线时真跑一次出体验成绩单。
 
 ### Phase 1: 基线评估（Baseline）— triage 用途
 
@@ -342,6 +357,9 @@ for each skill:
 - [skill-A] 仓库 xxx：已补 GitHub 自动检查、通用 bump.py、README 自动更新说明；版本号 1.1.2 → 1.1.3；体检 ✅ 全部通过
 - [skill-B] 不在 git 仓库：用户收不到更新，要开源先建仓库
 
+### 真实体验（Plus）
+体验成绩单：总耗时、每一步多少秒（对比标准和上次）、用户点了几下 / 发了几条消息、❌ 项和怎么修的、小白评审的意见、在哪个 AI 里真跑的。简单 skill 写「跳过体验关」。
+
 ### 平台适配（Plus）
 | 平台 | 体检 | 环境模拟测试 | 真机验证 |
 |---|---|---|---|
@@ -450,6 +468,7 @@ paired 行：`new_score` 栏记 vote 比数（如 `3-0 better`），`note` 记�
 | 7 | **静默跳过异常** | 遇到 git/tsv 异常时静默继续，破坏 ratchet 完整性 | 异常表 10 条 fallback 必须先告知用户再处理 |
 | 8 | **忽视维度相关性单独优化** | dim2/3/4 是相关簇，单独优化 dim2 时常发现已被前轮 dim3 修复推到顶 | 找最大加权短板维度时同时看相关簇短板，决定是否同步改 |
 
+| 11 | **复杂项目只看说明书打分、不真跑一遍**（Plus 新增） | 测不出慢、点了没反应、图看不全、文件夹一堆垃圾；用户实操一遍全是坑（实例：B-roll 选风格十几分钟、页面点了 AI 不动） | 走真实体验关：写剧本、真跑、按成绩单修 |
 | 9 | **优化完不涨版本号 / 只提醒不补齐**（Plus 新增） | 内容改了、版本号没变，插件市场认为没有新版，用户永远收不到这次优化 | Phase 3.5 自动跑 `autoupdate_fix.py`，补齐并涨版本号后再进 CHECKPOINT |
 | 10 | **只在本机测过就说「全平台能用」**（Plus 新增） | 本机能上网、有 brew、有显卡、能写桌面；Cowork / Codex 沙盒一样都没有，用户一跑就卡（实例：听写模型放 huggingface，Cowork 下载被拦） | 跑 `platform_check.py` + 环境模拟 prompt；报告里把没真机验证的平台列出来 |
 
