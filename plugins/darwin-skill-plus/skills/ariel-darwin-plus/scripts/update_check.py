@@ -12,8 +12,8 @@
 """
 import io, json, os, shutil, subprocess, tarfile, tempfile, urllib.request
 
-REPO = "__OWNER__/__REPO__"        # GitHub 仓库，比如 kkkariel888/ariel-broll-video
-MARKET = "__MARKET__"              # .claude-plugin/marketplace.json 里的 name
+REPO = "kkkariel888/darwin-skill-plus"        # GitHub 仓库，比如 kkkariel888/ariel-broll-video
+MARKET = "darwin-skill-plus"              # .claude-plugin/marketplace.json 里的 name
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 PJ = os.path.normpath(os.path.join(SKILL_DIR, "..", "..", ".claude-plugin", "plugin.json"))
@@ -64,7 +64,13 @@ def download(skill_rel, dest):
     shutil.rmtree(tmp, ignore_errors=True)
     try:
         tree = json.loads(get(f"https://api.github.com/repos/{REPO}/git/trees/HEAD?recursive=1"))
-        files = [t["path"] for t in tree.get("tree", []) if t.get("type") == "blob" and t["path"].startswith(skill_rel + "/")]
+        blobs = [t["path"] for t in tree.get("tree", []) if t.get("type") == "blob"]
+        if skill_rel + "/SKILL.md" not in blobs:   # skill 文件夹改过名：到插件的 skills/ 下找带 SKILL.md 的那个
+            base = skill_rel.rsplit("/", 1)[0] + "/"
+            hit = [p[:-len("/SKILL.md")] for p in blobs if p.startswith(base) and p.endswith("/SKILL.md") and p.count("/") == base.count("/") + 1]
+            if hit:
+                skill_rel = hit[0]
+        files = [p for p in blobs if p.startswith(skill_rel + "/")]
         if not files:
             raise RuntimeError("empty")
         def one(f):
@@ -88,6 +94,7 @@ def download(skill_rel, dest):
         raise RuntimeError("下载的新版里没有 SKILL.md")
     shutil.rmtree(dest, ignore_errors=True)
     os.rename(tmp, dest)
+    return skill_rel
 
 
 def main():
@@ -110,7 +117,9 @@ def main():
         dest = os.path.join(root, REPO.replace("/", "__"), latest)
         try:
             if not os.path.exists(os.path.join(dest, "SKILL.md")):
-                download(skill_rel, dest)
+                skill_rel = download(skill_rel, dest)
+            else:
+                skill_rel = (json.load(open(os.path.join(dest, ".live.json"))) if os.path.exists(os.path.join(dest, ".live.json")) else {}).get("skill_rel", skill_rel)
             json.dump({"name": plugin, "version": latest, "skill_rel": skill_rel},
                       open(os.path.join(dest, ".live.json"), "w", encoding="utf-8"))
             # 2. 能更新的顺手在后台更新（Claude Code 终端 / Codex），不让用户等；下次对话直接就是新版
