@@ -1,6 +1,6 @@
 ---
 name: darwin-skill-plus
-description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\"."
+description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次；和「平台适配体检」——查 skill 在开发者要的平台（Claude Code 终端、Claude 桌面 app、Cowork、Codex）上装不装得上、跑不跑得起来，跑不起来的当 P0 先修。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\", \"平台适配\", \"能不能在 Cowork 用\", \"Codex 能不能用\", \"全平台\"."
 ---
 
 # Darwin Skill Plus（达尔文增强版）
@@ -111,6 +111,27 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 
 ---
 
+## 平台适配体检（Plus 新增，gate 项，独立于 9 维度评分）
+
+上面的 Runtime 审查只管**措辞**（别写死「在 Claude Code 里」）。这一节管**能不能真跑起来**：同一个 skill，在本机终端能跑，到 Cowork、Codex 的沙盒里常常卡死（下载被拦、没有 brew、没有显卡、碰不到桌面）。
+
+**目标平台**：开发者说过要哪些就用哪些（看对话、README、SKILL.md 的 description）；没说就默认全部 4 个：`claude-code`（Claude Code 终端）、`claude-desktop`（Claude 桌面 app 的 Code 页面）、`cowork`（Claude 桌面 app 的 Cowork，Linux 隔离环境，只挂载用户选的文件夹，网络只放行白名单，没有显卡）、`codex`（OpenAI Codex 终端 / 桌面，默认沙盒，联网要批准）。写进 results.tsv 的 note：`platforms=...`。
+
+1. **Phase 0.5 加环境模拟 prompt**：目标里每个沙盒平台（cowork / codex）至少 1 个，开头写清环境，比如「（环境：Cowork，Linux 隔离环境，没有 brew、没有显卡，只能访问白名单网站，只能读写用户选的文件夹）」+ 一句正常用户请求。expected 写「不用环境里没有的东西；卡住时告诉用户具体放开哪个网址 / 换哪种做法，不是让用户在看不懂的选项里选」。
+2. **Phase 1 跑静态体检**：`python3 <本skill>/scripts/platform_check.py <仓库根目录> --platforms <目标平台>`，结果写进基线评分卡备注。
+   - 有 ❌（装不上、只认 Mac 又没退路、依赖没自动装、下载源在该平台被拦）→ Phase 2 第一轮定为 **P0「平台适配修复」**，note 写 `platform_fail=N`。
+   - 只有 ⚠️ → 当候选改进，和其他维度一起排优先级；改没改好由环境模拟 prompt 的 paired 比较说了算。
+3. **Phase 3.5 再跑一次**：不能有 ❌（最多修 3 次，还不行写进报告）。⚠️ 原样列进报告。
+4. **CHECKPOINT 和报告里诚实写**：静态体检 + 环境模拟只能证明「写法对」。沙盒的网络白名单、真机交互，要开发者在那个平台真跑一次才算数——报告里列出「还没真机验证的平台」，**不许写「全平台可用」**。
+
+| 情况 | 怎么办 |
+|---|---|
+| 修 ❌ 要换下载源 / 换依赖 | 优先用该平台能访问的源（GitHub、PyPI 一般能通；huggingface 在 Cowork 实测被拦），改完在本机实测一次脚本还能跑 |
+| skill 本来就只给一个平台用（名字或 README 写明） | `--platforms` 只填那一个，其他平台不查 |
+| 体检脚本自己报错 | 把输出原文告诉用户，跳过本节，报告里写「平台体检没跑成」 |
+
+---
+
 ## 自动发布准备：体检 + 自动补齐（Plus 新增，独立于 9 维度评分）
 
 skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git 仓库里时，达尔文增强版**优化完自己把发布准备做完，不只是提醒**。只有推送到 GitHub 前停一次（公开操作，推出去收不回）。
@@ -188,6 +209,10 @@ for each skill in 优化范围:
   # 汇总
   5. 计算加权总分
   6. 记录到 results.tsv
+
+  # Plus：两项体检（只看不改，结果写进评分卡备注）
+  7. autoupdate_check.py（用户能不能自动更新）
+  8. platform_check.py（各目标平台能不能装、能不能跑），有 ❌ 就把 Phase 2 第一轮定为 P0
 ```
 
 **如果子agent不可用**（超时、环境限制），维度8用干跑验证打分，标注 `dry_run`。不要因为跑不了测试就跳过这个维度——哪怕是模拟推演也比完全不看效果好。
@@ -313,6 +338,12 @@ for each skill:
 ### 自动发布准备（Plus）
 - [skill-A] 仓库 xxx：已补 GitHub 自动检查、通用 bump.py、README 自动更新说明；版本号 1.1.2 → 1.1.3；体检 ✅ 全部通过
 - [skill-B] 不在 git 仓库：用户收不到更新，要开源先建仓库
+
+### 平台适配（Plus）
+| 平台 | 体检 | 环境模拟测试 | 真机验证 |
+|---|---|---|---|
+| Claude Code 终端 | ✅ | — | ✅ 本机跑过 |
+| Cowork | ✅（修了 2 处） | 3-0 胜 | ⏳ 还没在 Cowork 真跑 |
 ```
 
 ---
@@ -417,6 +448,7 @@ paired 行：`new_score` 栏记 vote 比数（如 `3-0 better`），`note` 记�
 | 8 | **忽视维度相关性单独优化** | dim2/3/4 是相关簇，单独优化 dim2 时常发现已被前轮 dim3 修复推到顶 | 找最大加权短板维度时同时看相关簇短板，决定是否同步改 |
 
 | 9 | **优化完不涨版本号 / 只提醒不补齐**（Plus 新增） | 内容改了、版本号没变，插件市场认为没有新版，用户永远收不到这次优化 | Phase 3.5 自动跑 `autoupdate_fix.py`，补齐并涨版本号后再进 CHECKPOINT |
+| 10 | **只在本机测过就说「全平台能用」**（Plus 新增） | 本机能上网、有 brew、有显卡、能写桌面；Cowork / Codex 沙盒一样都没有，用户一跑就卡（实例：听写模型放 huggingface，Cowork 下载被拦） | 跑 `platform_check.py` + 环境模拟 prompt；报告里把没真机验证的平台列出来 |
 
 **触发场景**：每轮 Phase 2 改动前对照本表一次。任一反模式命中 → 改方案重写。
 
