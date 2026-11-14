@@ -2,12 +2,15 @@
 """开源发布检查：看一个仓库能不能让用户「装一次、自动更新」，顺便查开源前的基本功。
 只用 Python 自带库，只读不改。
 
-用法：python3 check_repo.py <仓库目录> [--base origin/main] [--json]
+用法：python3 check_repo.py <仓库目录> [--base origin/main] [--json] [--prefix ariel-]
 输出：每项一行 ✅ / ❌ / ⚠️ / ℹ️，最后一行 STATUS=PASS / WARN / FAIL。有 ❌ 时退出码为 1。
 """
 import argparse, glob, json, os, re, subprocess, sys
 
 R = []  # (level, id, text, fix)
+
+
+PREFIX = ""
 
 
 def add(level, cid, text, fix=""):
@@ -115,6 +118,19 @@ def check_plugin(root, base, files):
             add("FAIL", "P1", f"[{name}] skills/<名字>/SKILL.md 一个都没有，Claude 找不到 skill", "SKILL.md 必须放在插件目录的 skills/<名字>/ 下")
         if codex_ok and not xp:
             add("WARN", "P1", f"[{name}] 缺 .codex-plugin/plugin.json", "补上，version 和 Claude 那份一样")
+        # P8 打统一前缀能不能调出来（--prefix 才查）
+        for sk in skills:
+            d = os.path.basename(os.path.dirname(sk))
+            m = re.search(r"^name:\s*['\"]?([^'\"\n]+?)['\"]?\s*$", rd(sk).split("\n---", 1)[0], re.M)
+            fm = m.group(1).strip() if m else ""
+            if fm and fm != d:
+                add("WARN", "P8", f"[{name}] skill 文件夹叫 {d}，SKILL.md 里 name 叫 {fm}，两个不一样", "改成一样")
+            if PREFIX:
+                if (fm or d).startswith(PREFIX) and d.startswith(PREFIX):
+                    add("PASS", "P8", f"[{name}] skill 叫 {fm or d}，打 /{PREFIX.rstrip('-')} 能调出来")
+                else:
+                    add("FAIL", "P8", f"[{name}] skill 叫 {fm or d}，打 /{PREFIX.rstrip('-')} 搜不到",
+                        f"文件夹和 SKILL.md 的 name 都改成 {PREFIX}… 开头（插件名别改，老用户才能继续收到更新）")
 
         # P2 版本号在不在、一不一致
         vers = {"plugin.json": cp.get("version")}
@@ -274,7 +290,10 @@ def main():
     ap.add_argument("root")
     ap.add_argument("--base", default=None, help="和哪个分支比（默认远程主分支 origin/HEAD，其次 origin/main、origin/master）")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--prefix", default="", help="要求所有 skill 名字用这个前缀开头，比如 ariel-（打 /ariel 就能调出来）")
     a = ap.parse_args()
+    global PREFIX
+    PREFIX = a.prefix
     root = os.path.abspath(os.path.expanduser(a.root))
     if not os.path.isdir(root):
         print(f"找不到目录：{root}\nSTATUS=FAIL")

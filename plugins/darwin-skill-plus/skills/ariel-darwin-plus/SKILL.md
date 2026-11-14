@@ -1,5 +1,5 @@
 ---
-name: darwin-skill-plus
+name: ariel-darwin-plus
 description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次；和「平台适配体检」——查 skill 在开发者要的平台（Claude Code 终端、Claude 桌面 app、Cowork、Codex）上装不装得上、跑不跑得起来，跑不起来的当 P0 先修。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\", \"平台适配\", \"能不能在 Cowork 用\", \"Codex 能不能用\", \"全平台\"."
 ---
 
@@ -136,7 +136,7 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 
 skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git 仓库里时，达尔文增强版**优化完自己把发布准备做完，不只是提醒**。只有推送到 GitHub 前停一次（公开操作，推出去收不回）。
 
-**Phase 1（体检，只看不改）**：`python3 <本skill>/scripts/autoupdate_check.py <仓库根目录> --base <优化前 commit>`，结果写进基线评分卡的备注。
+**Phase 1（体检，只看不改）**：`python3 <本skill>/scripts/autoupdate_check.py <仓库根目录> --base <优化前 commit> [--prefix ariel-]`（作者要求 skill 统一前缀、打 `/前缀` 能调出来时加 `--prefix`；P8 ❌ 就把 skill 文件夹和 name 改成前缀开头，插件名不改），结果写进基线评分卡的备注。
 
 **Phase 3.5（自动补齐，所有 skill 优化完、汇总报告前，不用再问用户）**：
 1. 在优化分支上跑 `python3 <本skill>/scripts/autoupdate_fix.py <仓库根目录> --base <优化前 commit>`。它自动：补 `tools/bump.py`（写死插件名的换成通用版）、`tools/check_version_bump.py` + `.github/workflows/version-check.yml`、`.gitignore`、skill 的 `scripts/update_check.py`，并且**版本号改齐、改了内容就最后一位 +1**。
