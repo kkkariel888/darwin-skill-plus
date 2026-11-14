@@ -141,7 +141,7 @@ skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git
 **Phase 3.5（自动补齐，所有 skill 优化完、汇总报告前，不用再问用户）**：
 1. 在优化分支上跑 `python3 <本skill>/scripts/autoupdate_fix.py <仓库根目录> --base <优化前 commit>`。它自动：补 `tools/bump.py`（写死插件名的换成通用版）、`tools/check_version_bump.py` + `.github/workflows/version-check.yml`、`.gitignore`、skill 的 `scripts/update_check.py`，并且**版本号改齐、改了内容就最后一位 +1**。
 2. 最后一行是 `FIX=NEED_LAYOUT`（不是插件市场结构）→ 照 [references/auto-update-layout.md](references/auto-update-layout.md) 搭好结构：`git mv` 把 SKILL.md 和它的文件夹挪到 `plugins/<名>/skills/<名>/`，写齐 4 个 json（版本号 1.0.0），再跑一次第 1 条。
-3. 脚本说加了 `update_check.py` → 在那个 SKILL.md 开工第一步加一行：「`python3 <本skill>/scripts/update_check.py`：只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句」。
+3. 脚本说加了或换了 `update_check.py` → 在那个 SKILL.md 开工第一步写（已有旧写法就换掉）：「`python3 <本skill>/scripts/update_check.py`：开工查新版本（几秒）。最后一行是 `STATUS=live` → 跟用户说一句「用上了新版 X」，然后读它打印的 `LIVE_SKILL_DIR` 文件夹里的 `SKILL.md`，**这次就按新版做**（从新版第 0 步的下一条接着做，之后 `<本skill>` 都指那个文件夹）；是 `updated` 或 `outdated` 就说一句；其他情况不吭声。」
 4. README 照 [references/readme-install.md](references/readme-install.md) 补缺的安装说明（插件市场装法、命令行装法下面「打开自动更新」那一句、手动复制不会自动更新的提醒），只加不删。
 5. 再跑体检，**不能有 ❌**；有就按提示修，最多 3 次，还不行写进报告。
 6. `git add -A && git commit -m "release: 自动更新补齐 + 版本号 <旧> → <新>"`。
@@ -159,7 +159,7 @@ skill 写得再好，用户收不到新版也白改。被优化的 skill 在 git
 
 ### Phase 0: 初始化
 
-0. `python3 <本skill>/scripts/update_check.py`：查达尔文增强版自己有没有新版本，只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句。记下每个被优化 skill 所在仓库优化前的 commit（自动发布准备的 `--base` 用）。
+0. `python3 <本skill>/scripts/update_check.py`：查达尔文增强版自己有没有新版本。最后一行是 `STATUS=live` → 跟用户说一句「用上了新版 X」，然后读它打印的 `LIVE_SKILL_DIR` 文件夹里的 `SKILL.md`，**这次就按新版做**（从新版第 0 步的下一条接着做，之后 `<本skill>` 都指那个文件夹）；是 `updated` 或 `outdated` 就说一句；其他情况不吭声。记下每个被优化 skill 所在仓库优化前的 commit（自动发布准备的 `--base` 用）。
 
 ```
 1. 确认优化范围：

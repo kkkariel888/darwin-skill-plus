@@ -153,7 +153,7 @@ def main():
             desk = [l for l in md.splitlines() if re.search(r'~/Desktop|桌面上|到用户桌面|另存.{0,6}桌面|存.{0,4}到桌面', l)]
             if sb and any(not re.search(r'沙盒|Cowork|Codex|写不了|不能写|能写桌面就', l) for l in desk):
                 add(p, '⚠️', f'{name} 文件位置', f'{NAMES[p]} 只能碰用户给的文件夹，写到桌面会失败，要有退路（放回用户文件夹）')
-            if re.search(r'浏览器|browser|侧边|网页|页面', md):
+            if re.search(r'(打开|open|点开).{0,12}(页面|网页|浏览器|地址|page)|侧边浏览器|in-app browser|内置浏览器', md, re.I):
                 # 有专门讲「在哪打开」的小节，就只在那一节里找平台名
                 secs = re.findall(r'^#+ [^\n]*(?:打开|浏览器|browser|Browser)[^\n]*\n(.*?)(?=^#+ |\Z)', md, re.M | re.S)
                 where = '\n'.join(secs) or md

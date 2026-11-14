@@ -10,7 +10,7 @@
 │   ├── .claude-plugin/plugin.json         Claude 插件身份证（version 以这里为准）
 │   ├── .codex-plugin/plugin.json          Codex 插件身份证（version 和上面一样）
 │   └── skills/<插件名>/SKILL.md           skill 本体（必须在这一层，放插件根目录 Claude 找不到）
-│       └── scripts/update_check.py        开工前查新版本（兜底）
+│       └── scripts/update_check.py        开工查新版本：有新版这次就直接用新版
 ├── tools/bump.py                          一键改齐版本号
 ├── tools/check_version_bump.py            GitHub 自动检查用
 ├── .github/workflows/version-check.yml    忘涨版本号就拦下合并
