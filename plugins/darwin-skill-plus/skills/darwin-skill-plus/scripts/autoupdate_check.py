@@ -177,11 +177,14 @@ def check_plugin(root, base, files):
     # P5 开工前查新版本
     allsrc = "\n".join(rd(os.path.join(root, f)) for f in files if f.endswith((".py", ".sh", ".mjs", ".js", "SKILL.md"))
                        and os.path.getsize(os.path.join(root, f)) < 400000)
-    if re.search(r"raw\.githubusercontent\.com/.+plugin\.json|update_check", allsrc):
-        add("PASS", "P5", "skill 开工前会自己查新版本（兜底层）")
+    if "LIVE_SKILL_DIR" in allsrc and "STATUS=live" in allsrc:
+        add("PASS", "P5", "skill 开工前查新版本，有新版这次就直接用新版（任何 agent 都一样）")
+    elif re.search(r"raw\.githubusercontent\.com/.+plugin\.json|update_check", allsrc):
+        add("FAIL", "P5", "skill 开工会查新版本，但查到了这次还用旧版（桌面 app 只能提醒，要等同步）",
+            "换成 assets/update_check.py（有新版就下载、这次直接用），SKILL.md 第 0 步照它的 STATUS=live 写法改")
     else:
-        add("WARN", "P5", "skill 开工前不会自己查新版本：用户没开自动更新时就一直用旧版",
-            "复制 assets/update_check.py 进 skill 的 scripts/，SKILL.md 第 0 步加一行调用")
+        add("FAIL", "P5", "skill 开工前不会自己查新版本：用户没开自动更新时就一直用旧版",
+            "复制 assets/update_check.py 进 skill 的 scripts/，SKILL.md 第 0 步照它的 STATUS=live 写法加一行")
 
     # P6 一键改版本号
     if os.path.exists(os.path.join(root, "tools/bump.py")):

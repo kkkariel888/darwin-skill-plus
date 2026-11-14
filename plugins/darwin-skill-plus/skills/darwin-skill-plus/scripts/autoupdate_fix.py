@@ -7,7 +7,7 @@
   1. tools/bump.py（没有，或写死了插件名 → 换成通用版）
   2. tools/check_version_bump.py + .github/workflows/version-check.yml（GitHub 自动检查忘涨版本号）
   3. .gitignore（没有就建）
-  4. skill 的 scripts/update_check.py（开工查新版本；需要 --repo 或能从 origin 读出仓库名）
+  4. skill 的 scripts/update_check.py（开工查新版本，有新版这次就用新版；旧的只提醒版会换掉；需要 --repo 或能从 origin 读出仓库名）
   5. 版本号：几处不一致 → 改齐；相比 --base 改了内容但没涨 → 最后一位 +1
 最后一行：FIX=DONE / FIX=NEED_LAYOUT（不是插件市场结构，要照 references/auto-update-layout.md 搭）/ FIX=ERROR
 README 的安装说明、SKILL.md 开工那一行由 agent 照 references 补（要读懂原文再加，不适合脚本硬插）。
@@ -105,12 +105,13 @@ def main():
         # 4 开工查新版本
         for sk in sorted(os.listdir(os.path.join(pdir, "skills"))) if os.path.isdir(os.path.join(pdir, "skills")) else []:
             uc = os.path.join(pdir, "skills", sk, "scripts", "update_check.py")
-            if not os.path.exists(uc) and repo:
+            old = os.path.exists(uc) and "LIVE_SKILL_DIR" not in open(uc, encoding="utf-8").read()
+            if (not os.path.exists(uc) or old) and repo:
                 os.makedirs(os.path.dirname(uc), exist_ok=True)
                 t = open(os.path.join(ASSETS, "update_check.py"), encoding="utf-8").read()
                 t = t.replace("__OWNER__/__REPO__", repo).replace("__MARKET__", mk.get("name", ""))
                 open(uc, "w", encoding="utf-8").write(t)
-                done.append(f"[{name}] 加开工查新版本脚本：{os.path.relpath(uc, root)}（SKILL.md 开工那一行要 agent 补）")
+                done.append(f"[{name}] {'换成' if old else '加'}开工查新版本脚本（有新版这次就用新版）：{os.path.relpath(uc, root)}（SKILL.md 开工那一行要 agent 照 STATUS=live 写法补）")
 
         # 5 版本号
         xp = lj(xp_path)
