@@ -1,0 +1,51 @@
+{
+  "_说明": "各个 AI（agent）的安装规范。platform_check.py / platform_fix.py 照这张表查和改。要加新 AI：先读它的官方文档，照下面的格式加一条（或写进仓库根目录 agent-platforms.json 的 custom 里）。install 里 scope=root 是仓库根目录，scope=plugin 是每个插件的文件夹；make 是怎么生成：claude-market / claude-plugin / codex-market / codex-plugin 是内置的，copy:<Claude 那份的路径> 表示格式和 Claude 一样、照抄一份。",
+  "default": ["claude-desktop", "codex"],
+  "platforms": {
+    "claude-desktop": {
+      "name": "Claude 桌面 app 的 Code 页面",
+      "mention": "桌面|desktop|Desktop|Code 页面",
+      "sandbox": false,
+      "install": [
+        {"file": ".claude-plugin/marketplace.json", "scope": "root", "make": "claude-market"},
+        {"file": ".claude-plugin/plugin.json", "scope": "plugin", "make": "claude-plugin"}
+      ],
+      "readme": "**Claude 桌面 app（Code 页面）/ 网页版**\nCustomize → Plugins → Add → Add marketplace → Add from a repository → 填 `{repo}` → 打开 **Sync automatically** → 装 {plugin}",
+      "notes": "就在用户自己的电脑上跑：能装软件、能上网、有侧边浏览器。"
+    },
+    "claude-code": {
+      "name": "Claude Code 终端",
+      "mention": "Claude Code|终端|CLI",
+      "sandbox": false,
+      "install": [
+        {"file": ".claude-plugin/marketplace.json", "scope": "root", "make": "claude-market"},
+        {"file": ".claude-plugin/plugin.json", "scope": "plugin", "make": "claude-plugin"}
+      ],
+      "readme": "**Claude Code（终端）**\n```\n/plugin marketplace add {repo}\n/plugin install {plugin}@{market}\n```\n装完打开自动更新：`/plugin` → Marketplaces → 选 {market} → Enable auto-update（第三方市场默认是关的）",
+      "notes": "和 Code 页面一样在本机跑，只是没有侧边浏览器，要打开网页就用系统浏览器。"
+    },
+    "cowork": {
+      "name": "Claude 桌面 app 的 Cowork",
+      "mention": "Cowork|cowork",
+      "sandbox": true,
+      "blocked": ["huggingface.co"],
+      "install": [
+        {"file": ".claude-plugin/marketplace.json", "scope": "root", "make": "claude-market"},
+        {"file": ".claude-plugin/plugin.json", "scope": "plugin", "make": "claude-plugin"}
+      ],
+      "readme": "**Cowork**：和 Claude 桌面 app 共用一份插件，按上面桌面 app 的步骤装好就能用。",
+      "notes": "隔离的 Linux 小电脑：只能碰用户选的文件夹，没有 brew、没有显卡，只能上白名单网站，用户浏览器打不开它里面的 127.0.0.1。"
+    },
+    "codex": {
+      "name": "Codex",
+      "mention": "Codex|codex",
+      "sandbox": true,
+      "install": [
+        {"file": ".agents/plugins/marketplace.json", "scope": "root", "make": "codex-market"},
+        {"file": ".codex-plugin/plugin.json", "scope": "plugin", "make": "codex-plugin"}
+      ],
+      "readme": "**Codex**\n```bash\ncodex plugin marketplace add {repo}\ncodex plugin add {plugin}@{market}\n```",
+      "notes": "默认在沙盒里跑：联网要用户批准，不能写工作文件夹以外的地方，有 in-app 浏览器。"
+    }
+  }
+}

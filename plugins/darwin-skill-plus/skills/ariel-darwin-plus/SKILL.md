@@ -1,6 +1,6 @@
 ---
 name: ariel-darwin-plus
-description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次；和「平台适配体检」——查 skill 在开发者要的平台（Claude Code 终端、Claude 桌面 app、Cowork、Codex）上装不装得上、跑不跑得起来，跑不起来的当 P0 先修。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\", \"平台适配\", \"能不能在 Cowork 用\", \"Codex 能不能用\", \"全平台\"."
+description: "Darwin Skill Plus（达尔文增强版，基于花叔 darwin-skill 2.1，MIT）: 在原版基础上加了「自动发布准备」——优化完自动检查并补齐 skill 所在仓库的自动更新结构、自动涨版本号，推送前问一次；和「平台适配体检」——查 skill 在开发者要的 AI 里能不能完整用（默认 Claude 桌面 app 的 Code 页面 + Codex，点名的其他 AI 照官方规范补上），装不上、跑不起来的当 P0 改好。Autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"达尔文增强版\", \"darwin plus\", \"能不能自动更新\", \"平台适配\", \"能不能在 Cowork 用\", \"Codex 能不能用\", \"全平台\"."
 ---
 
 # Darwin Skill Plus（达尔文增强版）
@@ -115,14 +115,17 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 
 上面的 Runtime 审查只管**措辞**（别写死「在 Claude Code 里」）。这一节管**能不能真跑起来**：同一个 skill，在本机终端能跑，到 Cowork、Codex 的沙盒里常常卡死（下载被拦、没有 brew、没有显卡、碰不到桌面）。
 
-**目标平台**：开发者说过要哪些就用哪些（看对话、README、SKILL.md 的 description）；没说就默认全部 4 个：`claude-code`（Claude Code 终端）、`claude-desktop`（Claude 桌面 app 的 Code 页面）、`cowork`（Claude 桌面 app 的 Cowork，Linux 隔离环境，只挂载用户选的文件夹，网络只放行白名单，没有显卡）、`codex`（OpenAI Codex 终端 / 桌面，默认沙盒，联网要批准）。写进 results.tsv 的 note：`platforms=...`。
+**目标平台**：默认只管 2 个——`claude-desktop`（Claude 桌面 app 的 Code 页面）和 `codex`（OpenAI Codex，默认沙盒，联网要批准）。开发者没提别的就不管别的；提了就加：规范表 `assets/platforms.json` 里有的直接加（`claude-code` 终端、`cowork` 隔离环境），**没有的新 AI** 先上网找它的官方文档（插件/skill 装在哪、清单文件叫什么、怎么从 GitHub 装和自动更新），照规范表格式写进仓库根目录 `agent-platforms.json` 的 `custom`，找不到官方文档就老实告诉开发者、不要猜。仓库里已有 `agent-platforms.json` 的以它为准。写进 results.tsv 的 note：`platforms=...`。
 
-1. **Phase 0.5 加环境模拟 prompt**：目标里每个沙盒平台（cowork / codex）至少 1 个，开头写清环境，比如「（环境：Cowork，Linux 隔离环境，没有 brew、没有显卡，只能访问白名单网站，只能读写用户选的文件夹）」+ 一句正常用户请求。expected 写「不用环境里没有的东西；卡住时告诉用户具体放开哪个网址 / 换哪种做法，不是让用户在看不懂的选项里选」。
-2. **Phase 1 跑静态体检**：`python3 <本skill>/scripts/platform_check.py <仓库根目录> --platforms <目标平台>`，结果写进基线评分卡备注。
+1. **Phase 0.5 加环境模拟 prompt**：目标里每个沙盒平台（codex，以及开发者点名的 cowork 等）至少 1 个，开头写清环境，比如「（环境：Cowork，Linux 隔离环境，没有 brew、没有显卡，只能访问白名单网站，只能读写用户选的文件夹）」+ 一句正常用户请求。expected 写「不用环境里没有的东西；卡住时告诉用户具体放开哪个网址 / 换哪种做法，不是让用户在看不懂的选项里选」。
+2. **Phase 1 跑静态体检**：`python3 <本skill>/scripts/platform_check.py <仓库根目录> [--platforms <目标平台>]`（不填就按 agent-platforms.json，没有就按默认），结果写进基线评分卡备注。
    - 有 ❌（装不上、只认 Mac 又没退路、依赖没自动装、下载源在该平台被拦）→ Phase 2 第一轮定为 **P0「平台适配修复」**，note 写 `platform_fail=N`。
    - 只有 ⚠️ → 当候选改进，和其他维度一起排优先级；改没改好由环境模拟 prompt 的 paired 比较说了算。
-3. **Phase 3.5 再跑一次**：不能有 ❌（最多修 3 次，还不行写进报告）。⚠️ 原样列进报告。
-4. **CHECKPOINT 和报告里诚实写**：静态体检 + 环境模拟只能证明「写法对」。沙盒的网络白名单、真机交互，要开发者在那个平台真跑一次才算数——报告里列出「还没真机验证的平台」，**不许写「全平台可用」**。
+3. **改好，不只是查**（和 Phase 2 的 P0 一起做）：
+   - 装不上 / README 没写这个 AI 怎么装 → `python3 <本skill>/scripts/platform_fix.py <仓库根目录> [--platforms ...] [--add 新AI]`：自动补安装文件和 README 装法，把目标记进 `agent-platforms.json`，`tools/bump.py` 换成能改齐所有 AI 版本号的新版。输出有 ❗ 的照那个 AI 官方文档手写。
+   - 只认 Mac → 用 `shutil.which` / `platform.system` 判断，给别的系统的办法或写清只能在 Mac 做；第三方依赖 → 脚本开头 `pip install --target <缓存>` 自动装；下载源被拦 → 换 GitHub / PyPI，SKILL.md 出错表写清被拦时让用户放开哪几个网址；写桌面 → 退回用户给的文件夹；打开网页 → 「在哪打开」那节每个目标 AI 写一句。
+4. **Phase 3.5 再跑一次**：不能有 ❌（最多修 3 次，还不行写进报告）。⚠️ 原样列进报告。能真跑的真跑一次：Code 页面就是本机，挑一个典型任务从头跑到尾；本机有 `codex` 命令就把仓库复制到临时文件夹，`codex exec -C <临时文件夹> "读 <SKILL.md 路径>，照着把第 0、1 步做完，报告卡在哪"`。
+5. **CHECKPOINT 和报告里诚实写**：静态体检 + 环境模拟只能证明「写法对」。沙盒的网络白名单、真机交互，要在那个平台真跑一次才算数——报告里给一张「在哪能用」表（每个目标 AI 一行：✅ / ❌ 卡在哪 / 没实测），**不许写「全平台可用」**。
 
 | 情况 | 怎么办 |
 |---|---|
